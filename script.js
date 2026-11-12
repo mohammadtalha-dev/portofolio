@@ -1,12 +1,8 @@
-/* ============ Portfolio engine ============ */
-const BAKED_DATA = null; // @@BAKED@@
-
+const BAKED_DATA = null;
 const KEY = 'pf_data_v1', PWKEY = 'pf_pw_v1', SESSION = 'pf_admin_open';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-
-/* page hamesha bilkul upar se khule */
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 document.documentElement.style.scrollBehavior = 'auto';
 const toTop = () => { if (!location.hash) window.scrollTo(0, 0); };
@@ -16,8 +12,6 @@ addEventListener('load', () => {
     toTop(); setTimeout(toTop, 100); setTimeout(toTop, 400);
     setTimeout(() => { toTop(); document.documentElement.style.scrollBehavior = ''; }, 1000);
 });
-
-/* ---------- default data (only what you already told me) ---------- */
 const DEFAULTS = {
     profile: { name: 'Mohammad Talha', title: 'Full Stack Developer', tagline: '', photo: '', about: '', location: '', email: 'talha.developer1223@gmail.com', whatsapp: '03302413247', resume: '', availability: '' },
     stats: [], socials: [], skills: [], services: [], projects: [], experience: [],
@@ -28,8 +22,6 @@ const DEFAULTS = {
         { topic: 'JavaScript', status: 'learning', progress: '', note: '2 chapters done' }
     ]
 };
-
-/* ---------- admin form schema: add a field here and it appears everywhere ---------- */
 const SCHEMA = {
     profile: {
         label: 'Profile', single: true, fields: [
@@ -63,8 +55,6 @@ const SCHEMA = {
             { k: 'progress', l: 'Progress 0-100 (optional)', t: 'number' }, { k: 'note', l: 'Note (e.g. 2 chapters done)' }]
     }
 };
-
-/* ---------- storage ---------- */
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 function merge(base, extra) {
     const out = clone(base);
@@ -82,10 +72,8 @@ function load() {
 let data = load();
 function save() {
     try { localStorage.setItem(KEY, JSON.stringify(data)); }
-    catch (e) { toast('Storage full - use smaller images or export a backup.'); }
+    catch (e) { toast('Storage full - use smaller images.'); }
 }
-
-/* ---------- helpers ---------- */
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function url(u) {
     u = String(u || '').trim(); if (!u) return '';
@@ -103,23 +91,17 @@ function waNumber(n) { let d = String(n || '').replace(/\D/g, ''); if (d.startsW
 function gmailLink(to, subject = '', body = '') {
     return 'https://mail.google.com/mail/?view=cm&to=' + encodeURIComponent(to) + (subject ? '&su=' + encodeURIComponent(subject) : '') + (body ? '&body=' + encodeURIComponent(body) : '');
 }
-
-/* ---------- site rendering ---------- */
-let contactTab = 'wa'; // which contact form is showing: 'wa' or 'em'
-
+let contactTab = 'wa'; 
 function section(id, title, show, html, adminHint) {
     const sec = $('#' + id), inn = $('#' + id + '-in'), admin = isAdmin();
     sec.hidden = !(show || admin);
     inn.innerHTML = (show ? `<h2 class="reveal">${esc(title)}</h2>${html}` : (admin ? `<h2>${esc(title)}</h2><div class="empty">${esc(adminHint)}</div>` : ''));
 }
-
 function renderSite(opts = {}) {
     const d = data, p = d.profile;
     const wa = waNumber(p.whatsapp), canMail = has(p.email);
     document.title = [p.name, p.title].filter(has).join(' - ') || 'Portfolio';
     $('#logo').textContent = p.name || 'Portfolio';
-
-    /* hero */
     const initials = (p.name || '?').split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
     const socialBtns = d.socials.filter(s => has(s.label) && url(s.url)).map(s => btn(s.label, url(s.url))).join('');
     $('#home-in').innerHTML = `
@@ -136,15 +118,11 @@ function renderSite(opts = {}) {
     </div>
     <div class="hero-photo h-anim"><div class="ring"></div><div class="ring r2"></div>
       <div class="pframe">${p.photo ? `<img src="${esc(p.photo)}" alt="${esc(p.name)}">` : `<span>${esc(initials)}</span>`}</div></div>`;
-
-    /* about */
     const meta = [p.location, p.availability].filter(has).map(t => `<span class="pill">${esc(t)}</span>`).join('');
     const stats = d.stats.filter(s => has(s.value) || has(s.label)).map(s => cell(card(`<div class="stat"><b>${esc(s.value)}</b><span>${esc(s.label)}</span></div>`))).join('');
     section('about', 'About', has(p.about) || stats || meta,
         `<div class="about"><div class="reveal"><p class="txt">${esc(p.about)}</p>${meta ? `<div class="meta">${meta}</div>` : ''}</div>${stats ? `<div class="stats">${stats}</div>` : ''}</div>`,
         'Admin panel > Profile: write your About text.');
-
-    /* skills grouped */
     const groups = {};
     d.skills.filter(s => has(s.name)).forEach(s => (groups[s.category?.trim() || 'Skills'] ??= []).push(s));
     section('skills', 'Skills', Object.keys(groups).length,
@@ -152,13 +130,9 @@ function renderSite(opts = {}) {
             const lv = has(s.level) ? Math.max(0, Math.min(100, +s.level)) : null;
             return `<div class="sk"><div><span>${esc(s.name)}</span>${lv !== null ? `<em>${lv}%</em>` : ''}</div>${lv !== null ? `<div class="bar"><i style="--w:${lv}%"></i></div>` : ''}</div>`;
         }).join('')}`))).join('')}</div>`, 'Admin panel > Skills: add your first skill.');
-
-    /* services */
     section('services', 'Services', d.services.some(s => has(s.title)),
         `<div class="grid">${d.services.filter(s => has(s.title)).map(s => cell(card(`${has(s.icon) ? `<div class="ico">${esc(s.icon)}</div>` : ''}<h3>${esc(s.title)}</h3><p>${esc(s.description)}</p>`))).join('')}</div>`,
         'Admin panel > Services: add what you offer.');
-
-    /* projects */
     section('projects', 'Projects', d.projects.some(s => has(s.title)),
         `<div class="grid">${d.projects.filter(s => has(s.title)).map(s => cell(card(`
       ${s.image ? `<div class="pimg"><img src="${esc(s.image)}" alt="${esc(s.title)}" loading="lazy"></div>` : ''}
@@ -166,14 +140,10 @@ function renderSite(opts = {}) {
       ${has(s.tech) ? `<div class="tags">${s.tech.split(',').filter(t => t.trim()).map(t => `<span>${esc(t.trim())}</span>`).join('')}</div>` : ''}
       <div class="row">${btn('Live demo', url(s.live), 'solid sm')}${btn('Code', url(s.repo), 'sm')}</div>`))).join('')}</div>`,
         'Admin panel > Projects: add a project and its card appears here.');
-
-    /* experience */
     section('experience', 'Experience', d.experience.some(s => has(s.role) || has(s.org)),
         `<div class="tl">${d.experience.filter(s => has(s.role) || has(s.org)).map(s => cell(card(`
       ${has(s.period) ? `<div class="period">${esc(s.period)}</div>` : ''}<h3>${esc(s.role)}</h3>${has(s.org) ? `<div class="org">${esc(s.org)}</div>` : ''}<p>${esc(s.description)}</p>`))).join('')}</div>`,
         'Admin panel > Experience: add a role.');
-
-    /* learning */
     const label = { completed: 'Completed', learning: 'Learning now', pending: 'Not started yet' };
     section('learning', 'Learning progress', d.learning.some(s => has(s.topic)),
         `<div class="grid">${d.learning.filter(s => has(s.topic)).map(s => {
@@ -182,8 +152,6 @@ function renderSite(opts = {}) {
             const bar = pr !== null ? `<div class="bar"><i style="--w:${pr}%"></i></div>` : (st === 'learning' ? `<div class="bar live"><i></i></div>` : '');
             return cell(card(`<span class="chip ${st}">${label[st]}</span><h3>${esc(s.topic)}</h3>${has(s.note) ? `<p>${esc(s.note)}</p>` : ''}${bar}`));
         }).join('')}</div>`, 'Admin panel > Learning: add what you are learning.');
-
-    /* contact: two buttons (WhatsApp / Email), one form shown at a time */
     const canForm = canMail || wa;
     const sl = d.socials.filter(s => has(s.label) && url(s.url));
     const tab = (contactTab === 'em' && canMail) ? 'em' : (wa ? 'wa' : 'em');
@@ -202,19 +170,15 @@ function renderSite(opts = {}) {
       </div>
       ${canForm ? `<div class="reveal">${waPane}${emPane}</div>` : ''}
     </div>`, 'Admin panel > Profile: add your WhatsApp number and email so the contact forms appear.');
-
     $('#foot-in').textContent = has(p.name) ? `© ${new Date().getFullYear()} ${p.name}` : '';
     buildNav();
     if (!opts.quiet) animateIn(); else if (window.ScrollTrigger) ScrollTrigger.refresh();
     $('#fab').hidden = !isAdmin();
 }
-
 function buildNav() {
     const names = { about: 'About', skills: 'Skills', services: 'Services', projects: 'Projects', experience: 'Experience', learning: 'Learning', contact: 'Contact' };
     $('#navlinks').innerHTML = Object.entries(names).filter(([id]) => !$('#' + id).hidden).map(([id, n]) => `<a href="#${id}">${n}</a>`).join('');
 }
-
-/* switch between the WhatsApp and Email forms */
 document.addEventListener('click', e => {
     const t = e.target.closest('[data-form]'); if (!t) return;
     contactTab = t.dataset.form;
@@ -225,8 +189,6 @@ document.addEventListener('click', e => {
         if (on && window.gsap && !reduced) gsap.fromTo(p, { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: .55, ease: 'power3.out' });
     });
 });
-
-/* ---------- animation ---------- */
 let introDone = false;
 function animateIn() {
     if (!window.gsap || reduced) return;
@@ -244,8 +206,6 @@ function animateIn() {
     });
     ScrollTrigger.refresh();
 }
-
-/* tilt cards, magnetic buttons, cursor glow (event delegation: survives re-render) */
 document.addEventListener('mousemove', e => {
     const g = $('#glow'); g.style.opacity = 1; g.style.left = e.clientX + 'px'; g.style.top = e.clientY + 'px';
     if (reduced) return;
@@ -261,8 +221,6 @@ document.addEventListener('mousemove', e => {
     if (b) { const r = b.getBoundingClientRect(); b.style.setProperty('--mx', (e.clientX - r.left - r.width / 2) * .22 + 'px'); b.style.setProperty('--my', (e.clientY - r.top - r.height / 2) * .35 + 'px'); }
 });
 document.addEventListener('mouseleave', () => { $('#glow').style.opacity = 0; });
-
-/* nav behaviour */
 $('#burger').onclick = () => $('#nav').classList.toggle('open');
 $('#navlinks').addEventListener('click', () => $('#nav').classList.remove('open'));
 addEventListener('scroll', () => {
@@ -270,16 +228,12 @@ addEventListener('scroll', () => {
     $$('.sec:not([hidden])').forEach(s => { if (s.getBoundingClientRect().top < innerHeight * .4) cur = s.id; });
     $$('#navlinks a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + cur));
 }, { passive: true });
-
-/* contact forms: #cf-wa opens WhatsApp, #cf-em sends an email to you (FormSubmit) */
 document.addEventListener('submit', async e => {
     const id = e.target.id;
     if (id !== 'cf-wa' && id !== 'cf-em') return;
     e.preventDefault();
     const f = e.target, b = $('button', f), fd = Object.fromEntries(new FormData(f));
     if (fd._honey) return;
-
-    /* WhatsApp form */
     if (id === 'cf-wa') {
         const wa = waNumber(data.profile.whatsapp);
         if (!wa) return toast('WhatsApp number is not set.');
@@ -287,8 +241,6 @@ document.addEventListener('submit', async e => {
         f.reset(); toast('Opening WhatsApp. Press send there to deliver your message.');
         return;
     }
-
-    /* Email form */
     const to = data.profile.email.trim();
     const old = b.textContent;
     b.disabled = true; b.textContent = 'Sending...';
@@ -308,14 +260,12 @@ document.addEventListener('submit', async e => {
     clearTimeout(tm);
     b.disabled = false; b.textContent = old;
 });
-
-/* ---------- 3D background (Three.js) ---------- */
 function initScene() {
     if (!window.THREE || reduced) return;
     const canvas = $('#bg'), R = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
     R.setPixelRatio(Math.min(devicePixelRatio, 2));
     const S = new THREE.Scene(), cam = new THREE.PerspectiveCamera(60, 1, .1, 100); cam.position.z = 7;
-    const N = 1400, pos = new Float32Array(N * 3), col = new Float32Array(N * 3), a = new THREE.Color('#8b5cf6'), b = new THREE.Color('#2f9bff');
+    const N = innerWidth < 700 ? 600 : 1400, pos = new Float32Array(N * 3), col = new Float32Array(N * 3), a = new THREE.Color('#8b5cf6'), b = new THREE.Color('#2f9bff');
     for (let i = 0; i < N; i++) {
         pos.set([(Math.random() - .5) * 24, (Math.random() - .5) * 24, (Math.random() - .5) * 16], i * 3);
         const c = a.clone().lerp(b, Math.random()); col.set([c.r, c.g, c.b], i * 3);
@@ -339,23 +289,19 @@ function initScene() {
     }
     loop();
 }
-
-/* ============ ADMIN PANEL ============ */
 const panel = $('#panel');
 const A = { tab: 'profile', open: -1, unlocked: false };
-
 async function hashPw(s) {
     if (window.crypto?.subtle) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('pf:' + s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
     let h = 5381; for (const ch of 'pf:' + s) h = (h * 33) ^ ch.charCodeAt(0); return 'x' + (h >>> 0);
 }
 function openPanel() { panel.classList.add('open'); drawPanel(); }
 function closePanel() { panel.classList.remove('open'); sessionStorage.removeItem(SESSION); renderSite({ quiet: true }); }
-
 function drawPanel() {
     if (!isAdmin()) return drawLock();
     const tabs = [...Object.keys(SCHEMA), 'settings'];
     panel.innerHTML = `<div class="ph"><span>Edit your portfolio</span><button class="px" data-act="close" aria-label="Close">×</button></div>
-    <div class="tabs">${tabs.map(t => `<button data-act="tab" data-t="${t}" class="${A.tab === t ? 'on' : ''}">${t === 'settings' ? 'Backup & publish' : SCHEMA[t].label}</button>`).join('')}</div>
+    <div class="tabs">${tabs.map(t => `<button data-act="tab" data-t="${t}" class="${A.tab === t ? 'on' : ''}">${t === 'settings' ? 'Password' : SCHEMA[t].label}</button>`).join('')}</div>
     <div class="pb" id="pb">${A.tab === 'settings' ? settingsHTML() : A.tab === 'profile' ? formHTML(SCHEMA.profile.fields, data.profile, '') : listHTML(A.tab)}</div>`;
 }
 function drawLock() {
@@ -366,7 +312,6 @@ function drawLock() {
     <button class="abtn main" data-act="unlock">${first ? 'Save password & open' : 'Unlock'}</button></div>`;
     setTimeout(() => $('#pw')?.focus(), 400);
 }
-
 function fieldHTML(f, val, attrs) {
     const t = f.t || 'text';
     if (t === 'textarea') return `<label class="fld"><span>${f.l}</span><textarea rows="4" ${attrs}>${esc(val)}</textarea></label>`;
@@ -384,29 +329,21 @@ function listHTML(t) {
     ${list.length ? '' : '<p class="hint">Nothing here yet. Add your first one and its card appears on the site.</p>'}`;
 }
 function settingsHTML() {
-    return `<p class="hint">Your edits are saved in this browser automatically. To make them visible to everyone, click <b>Publish</b>, then replace script.js on your hosting with the downloaded file.</p>
-    <button class="abtn main" data-act="publish">Publish: download updated script.js</button>
-    <button class="abtn" data-act="export">Download backup (.json)</button>
-    <label class="abtn">Restore backup<input type="file" accept=".json,application/json" hidden id="imp"></label>
-    <button class="abtn" data-act="reset">Discard my edits (go back to published version)</button>
-    <label class="fld"><span>Change password</span><input type="password" id="npw" placeholder="New password"></label>
-    <button class="abtn" data-act="setpw">Save new password</button>
+    return `<label class="fld"><span>Change password</span><input type="password" id="npw" placeholder="New password"></label>
+    <button class="abtn main" data-act="setpw">Save new password</button>
     <button class="abtn" data-act="lock">Lock admin</button>`;
 }
-
 function target(el) {
     const i = el.dataset.i; return A.tab === 'profile' ? data.profile : data[A.tab][+i];
 }
 let rt; const liveRender = () => { clearTimeout(rt); rt = setTimeout(() => renderSite({ quiet: true }), 160); };
-
 panel.addEventListener('input', e => {
     const el = e.target; if (!el.dataset.k || el.type === 'file') return;
     target(el)[el.dataset.k] = el.value; save(); liveRender();
     const b = $(`.item:nth-child(${(+el.dataset.i || 0) + 1}) .ih b`, panel); if (b && SCHEMA[A.tab]?.title === el.dataset.k) b.textContent = el.value || 'Untitled';
 });
-panel.addEventListener('change', async e => {
+panel.addEventListener('change', e => {
     const el = e.target;
-    if (el.id === 'imp') { const f = el.files[0]; if (!f) return; try { data = merge(DEFAULTS, JSON.parse(await f.text())); save(); renderSite(); drawPanel(); toast('Backup restored.'); } catch (x) { toast('That file is not a valid backup.'); } return; }
     if (el.type === 'file' && el.dataset.k && el.files[0]) {
         const max = +el.dataset.max || 900, f = el.files[0], im = new Image(), fr = new FileReader();
         fr.onload = () => {
@@ -442,37 +379,59 @@ panel.addEventListener('click', async e => {
         }
         case 'setpw': { const v = $('#npw').value; if (!v) return toast('Type a new password first.'); localStorage.setItem(PWKEY, await hashPw(v)); $('#npw').value = ''; toast('Password updated.'); break; }
         case 'lock': closePanel(); break;
-        case 'export': download('portfolio-backup.json', JSON.stringify(data, null, 2), 'application/json'); break;
-        case 'reset': if (confirm('Remove all edits made in this browser?')) { localStorage.removeItem(KEY); data = load(); renderSite(); drawPanel(); toast('Back to published version.'); } break;
-        case 'publish': publish(); break;
     }
 });
-
 function download(name, text, type) {
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; document.body.append(a); a.click(); a.remove();
 }
 async function publish() {
     let src;
     try { const r = await fetch('script.js', { cache: 'no-store' }); if (!r.ok) throw 0; src = await r.text(); }
-    catch (e) { return toast('Publish works when the site is opened from a host or local server. For now use "Download backup".'); }
+    catch (e) { return toast('Publish works when the site is opened from a host or local server (Live Server).'); }
     const json = JSON.stringify(data);
     const out = src.replace(/const BAKED_DATA = [\s\S]*?; \/\/ @@BAKED@@/, () => 'const BAKED_DATA = ' + json + '; // @@BAKED@@');
     download('script.js', out, 'text/javascript'); toast('Upload this script.js to your hosting to go live.');
 }
-
-/* open admin: Ctrl+Shift+A, #admin in the address, or click the logo 5 times */
-addEventListener('keydown', e => { if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') { e.preventDefault(); openPanel(); } });
-let clicks = 0, ct;
-$('#logo').addEventListener('click', () => { clicks++; clearTimeout(ct); ct = setTimeout(() => clicks = 0, 1500); if (clicks >= 5) { clicks = 0; openPanel(); } });
+addEventListener('keydown', e => {
+    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'u' && isAdmin()) { e.preventDefault(); publish(); }
+});
+addEventListener('keydown', e => {
+    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        openPanel();
+    }
+});
+let logoClicks = 0;
+let logoClickTimer = null;
+const logoElement = $('#logo');
+if (logoElement) {
+    logoElement.style.cursor = 'pointer';
+    logoElement.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        logoClicks++;
+        clearTimeout(logoClickTimer);
+        if (logoClicks >= 5) {
+            logoClicks = 0;
+            clearTimeout(logoClickTimer);
+            openPanel();
+            return;
+        }
+        logoClickTimer = setTimeout(() => {
+            logoClicks = 0;
+        }, 3000);
+    });
+}
 $('#fab').onclick = openPanel;
-addEventListener('hashchange', () => { if (location.hash === '#admin') { openPanel(); history.replaceState(null, '', location.pathname); } });
-
-/* ---------- start ---------- */
+addEventListener('hashchange', () => {
+    if (location.hash === '#admin') {
+        openPanel();
+        history.replaceState(null, '', location.pathname);
+    }
+});
 renderSite();
 initScene();
 if (location.hash === '#admin') { openPanel(); history.replaceState(null, '', location.pathname); }
-
-/* navbar: top par chhupa, jab tum khud scroll karo tab aaye */
 const navEl = $('#nav');
 let userScrolled = false;
 ['wheel', 'touchmove', 'keydown', 'mousedown'].forEach(ev => addEventListener(ev, () => { userScrolled = true; }, { passive: true, once: true }));
@@ -482,3 +441,295 @@ function updateNav() {
 }
 addEventListener('scroll', updateNav, { passive: true });
 updateNav();
+const REVIEW_KEY = 'pf_rated_v1';
+const FIRST_REVIEW_DELAY = 1500;
+const LATER_REVIEW_DELAY = 3 * 60 * 1000;
+(function reviewPopup() {
+    try {
+        if (localStorage.getItem(REVIEW_KEY)) return;
+    } catch (e) {}
+    if (isAdmin()) return;
+    const labels = [
+        '',
+        'Poor',
+        'Fair',
+        'Good',
+        'Very good',
+        'Excellent'
+    ];
+    const star = `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+    `;
+    const css = document.createElement('style');
+    css.textContent = `
+        .rv {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+            background: rgba(5,4,11,.82);
+            backdrop-filter: blur(9px);
+            -webkit-backdrop-filter: blur(9px);
+        }
+        .rv-card {
+            width: min(420px,100%);
+            text-align: center;
+            padding: 34px 26px 28px;
+            border-radius: 24px;
+            background: #120d24;
+            border: 1px solid rgba(139,92,246,.6);
+            box-shadow: 0 30px 90px rgba(139,92,246,.35);
+        }
+        .rv-card h3 {
+            font-family: var(--display);
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+            color: white;
+        }
+        .rv-card p {
+            color: var(--muted);
+            font-size: .95rem;
+        }
+        .rv-stars {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin: 24px 0 10px;
+        }
+        .rv-star {
+            background: none;
+            border: 0;
+            padding: 4px;
+            cursor: pointer;
+            width: 54px;
+            height: 54px;
+            color: rgba(255,255,255,.2);
+            transition: .2s;
+        }
+        .rv-star svg {
+            width: 100%;
+            height: 100%;
+            fill: currentColor;
+        }
+        .rv-star.on {
+            color: #fbbf24;
+            filter: drop-shadow(0 0 10px rgba(251,191,36,.7));
+        }
+        .rv-star:hover {
+            transform: scale(1.15);
+        }
+        .rv-label {
+            min-height: 1.5em;
+            color: #fbbf24 !important;
+            font-weight: 700;
+        }
+        .rv-later {
+            margin-top: 16px;
+            padding: 8px 20px;
+            background: transparent;
+            border: 0;
+            color: var(--muted);
+            cursor: pointer;
+            font: 600 .9rem var(--body);
+            text-decoration: underline;
+        }
+        .rate-us {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            z-index: 9998;
+            padding: 12px 21px;
+            border: 0;
+            border-radius: 999px;
+            background: var(--grad);
+            color: white;
+            font: 700 .9rem var(--body);
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(139,92,246,.4);
+        }
+        .rate-us:hover {
+            transform: translateY(-3px);
+        }
+        @media(max-width:420px) {
+            .rv-star {
+                width: 46px;
+                height: 46px;
+            }
+            .rate-us {
+                right: 14px;
+                bottom: 14px;
+            }
+        }
+    `;
+    document.head.appendChild(css);
+    let box = null;
+    let selectedRating = 0;
+    let submitting = false;
+    let popupTimer = null;
+    const rateButton = document.createElement('button');
+    rateButton.type = 'button';
+    rateButton.className = 'rate-us';
+    rateButton.textContent = '★ Rate Us';
+    document.body.appendChild(rateButton);
+    function closePopup() {
+        if (!box) return;
+        const oldBox = box;
+        box = null;
+        document.body.style.overflow = '';
+        oldBox.remove();
+    }
+    function schedulePopup(delay) {
+        clearTimeout(popupTimer);
+        popupTimer = setTimeout(() => {
+            let alreadyRated = false;
+            try {
+                alreadyRated = !!localStorage.getItem(REVIEW_KEY);
+            } catch (e) {}
+            if (!alreadyRated && !isAdmin()) {
+                showPopup();
+            }
+        }, delay);
+    }
+    function paint(n) {
+        if (!box) return;
+        $$('.rv-star', box).forEach((s, i) => {
+            s.classList.toggle('on', i < n);
+        });
+        const label = $('#rv-label', box);
+        if (label) {
+            label.textContent = labels[n] || 'Select your rating';
+        }
+    }
+    async function sendRating(n) {
+        const to = (data.profile.email || '').trim();
+        if (!to) return false;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => {
+            controller.abort();
+        }, 12000);
+        try {
+            const response = await fetch(
+                'https://formsubmit.co/ajax/' + encodeURIComponent(to),
+                {
+                    method: 'POST',
+                    signal: controller.signal,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json'
+                    },
+                    body: JSON.stringify({
+                        rating: n + ' / 5',
+                        message:
+                            'A visitor rated your portfolio ' +
+                            n + ' out of 5 stars.',
+                        _subject:
+                            'Portfolio rating: ' + n + ' stars',
+                        _template: 'table',
+                        _captcha: 'false'
+                    })
+                }
+            );
+            let result = {};
+            try {
+                result = await response.json();
+            } catch (e) {}
+            return response.ok &&
+                String(result.success) !== 'false';
+        } catch (e) {
+            return false;
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
+    function showPopup() {
+        if (box) return;
+        try {
+            if (localStorage.getItem(REVIEW_KEY)) return;
+        } catch (e) {}
+        clearTimeout(popupTimer);
+        selectedRating = 0;
+        submitting = false;
+        box = document.createElement('div');
+        box.className = 'rv';
+        box.setAttribute('role', 'dialog');
+        box.setAttribute('aria-modal', 'true');
+        box.innerHTML = `
+            <div class="rv-card">
+                <h3>Rate my portfolio</h3>
+                <p>
+                    Your feedback helps me improve my work.
+                </p>
+                <div class="rv-stars">
+                    ${[1,2,3,4,5].map(n => `
+                        <button
+                            type="button"
+                            class="rv-star"
+                            data-n="${n}"
+                            aria-label="${n} stars">
+                            ${star}
+                        </button>
+                    `).join('')}
+                </div>
+                <p class="rv-label" id="rv-label">
+                    Select your rating
+                </p>
+                <button
+                    type="button"
+                    class="rv-later"
+                    id="rv-later">
+                    Later
+                </button>
+            </div>
+        `;
+        document.body.appendChild(box);
+        document.body.style.overflow = 'hidden';
+        const stars = $('.rv-stars', box);
+        stars.addEventListener('mouseover', e => {
+            const s = e.target.closest('.rv-star');
+            if (s && !submitting) {
+                paint(+s.dataset.n);
+            }
+        });
+        stars.addEventListener('mouseleave', () => {
+            if (!submitting) {
+                paint(selectedRating);
+            }
+        });
+        stars.addEventListener('click', async e => {
+            const s = e.target.closest('.rv-star');
+            if (!s || submitting) return;
+            selectedRating = +s.dataset.n;
+            submitting = true;
+            paint(selectedRating);
+            $('#rv-label', box).textContent =
+                'Submitting your rating...';
+            const success = await sendRating(selectedRating);
+            if (success) {
+                try {
+                    localStorage.setItem(
+                        REVIEW_KEY,
+                        String(selectedRating)
+                    );
+                } catch (e) {}
+                $('#rv-label', box).textContent =
+                    'Thank you! ' + labels[selectedRating];
+                rateButton.remove();
+                setTimeout(closePopup, 1200);
+            } else {
+                submitting = false;
+                $('#rv-label', box).textContent =
+                    'Could not submit. Please try again.';
+            }
+        });
+        $('#rv-later', box).addEventListener('click', () => {
+            closePopup();
+            schedulePopup(LATER_REVIEW_DELAY);
+        });
+    }
+    rateButton.addEventListener('click', showPopup);
+    schedulePopup(FIRST_REVIEW_DELAY);
+})();
